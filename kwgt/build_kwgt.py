@@ -74,7 +74,7 @@ def trend_formula():
     return f"$mu(round,({last})-({first}))$"
 
 
-def text(expr, size, color=FG, align="CENTER", bold=False, title=None):
+def text(expr, size, color=FG, align="CENTER", bold=False, title=None, width=None):
     m = {
         "internal_type": "TextModule",
         "text_expression": expr,
@@ -84,6 +84,9 @@ def text(expr, size, color=FG, align="CENTER", bold=False, title=None):
     }
     if bold:
         m["text_style_bold"] = True
+    if width:
+        # Fixed width (px) forces the text to wrap instead of overflowing.
+        m["text_width"] = float(width)
     if title:
         m["internal_title"] = title
     return m
@@ -117,16 +120,43 @@ def stack(items, orientation="VERTICAL_CENTER", margin=0.0, title=None, **extra)
     return m
 
 
-def stat(icon_name, value_expr, label):
-    """One cell of the stats row: glyph, value, label, stacked vertically."""
+def stat(value_expr, label):
+    """One cell of the stats row: value over label, stacked vertically.
+
+    (No glyph: KWGT's bundled icon font lacks newer names like `thermostat`,
+    which render as an error mark. The values + labels read cleanly on their
+    own and match the reference card.)"""
     return stack(
         [
-            fonticon(icon_name, 16, MUTED),
-            text(value_expr, 16, FG),
+            text(value_expr, 18, FG),
             text(label, 9, FAINT),
         ],
         orientation="VERTICAL_CENTER",
         margin=2.0,
+    )
+
+
+def gauge():
+    """Vertical thermometer bar built from shapes (reliable, unlike a
+    misconfigured ProgressModule). Today's high on top, low on the bottom."""
+    bar = {
+        "internal_type": "ShapeModule",
+        "internal_title": "Gauge bar",
+        "shape_type": "RECT",
+        "shape_corners": 8.0,
+        "shape_width": 8.0,
+        "shape_height": 96.0,
+        "paint_color": ACCENT,
+    }
+    return stack(
+        [
+            text("$wf(max,0)$°", 12, "#FFFCA5A5"),
+            bar,
+            text("$wf(min,0)$°", 12, "#FF7DD3FC"),
+        ],
+        orientation="VERTICAL_CENTER",
+        margin=4.0,
+        title="Temp gauge",
     )
 
 
@@ -197,65 +227,50 @@ def build_preset():
         '" Temperatures hold steady.")$'
     )
 
-    # Current block (left) + temperature gauge (right) in a horizontal row.
+    # Currently label + condition + big temperature, with the condition icon
+    # to its left and the gauge to its right.
     current_block = stack(
         [
-            text("CURRENTLY", 10, FAINT, align="LEFT", title="Currently label"),
-            text("$tc(cap,wi(cond))$", 16, MUTED, align="LEFT", title="Condition"),
-            text("$wi(temp)$°", 60, FG, align="LEFT", title="Current temp"),
+            text("CURRENTLY", 10, FAINT, title="Currently label"),
+            text("$tc(cap,wi(cond))$", 15, MUTED, width=150, title="Condition"),
+            text("$wi(temp)$°", 58, FG, title="Current temp"),
         ],
-        orientation="VERTICAL_RIGHT",
+        orientation="VERTICAL_CENTER",
         margin=2.0,
         title="Current block",
     )
 
-    gauge = {
-        "internal_type": "ProgressModule",
-        "internal_title": "Temp gauge",
-        "progress_progress": "CUSTOM",
-        "progress_mode": "LINE",
-        "progress_level": 50.0,
-        "style_shape": "RECT",
-        "style_width": 10.0,
-        "style_height": 120.0,
-        "paint_color": ACCENT,
-        "config_rotate_mode": "FIXED",
-        "config_rotate_offset": 270.0,
-        "internal_formulas": {
-            # Current temp's position between today's low and high (0-100%).
-            "progress_level": "$mu(min,100,mu(max,0,(wi(temp)-wf(min,0))/(wf(max,0)-wf(min,0))*100))$"
-        },
-    }
-
     current_row = stack(
         [
-            current_block,
             fonticon(
                 "wb_sunny",
-                64,
+                52,
                 FG,
                 formula=icon_formula("wi(icon)"),
                 title="Current icon",
             ),
-            gauge,
+            current_block,
+            gauge(),
         ],
         orientation="HORIZONTAL_CENTER",
-        margin=16.0,
+        margin=14.0,
         title="Current row",
     )
 
     stats_row = stack(
         [
-            stat("thermostat", "$wi(flik)$°", "FEELS"),
-            stat("water_drop", "$wi(hum)$%", "HUMIDITY"),
-            stat("air", "$wi(wind)$$wi(windu)$", "WIND"),
+            stat("$wi(flik)$°", "FEELS"),
+            stat("$wi(hum)$%", "HUMIDITY"),
+            stat("$wi(wind)$$wi(windu)$", "WIND"),
         ],
         orientation="HORIZONTAL_CENTER",
-        margin=18.0,
+        margin=22.0,
         title="Stats row",
     )
 
-    summary_block = text(summary, 13, MUTED, align="LEFT", title="Week summary")
+    summary_block = text(
+        summary, 13, MUTED, align="LEFT", width=336, title="Week summary"
+    )
 
     forecast_label = text("7-DAY FORECAST", 10, FAINT, align="LEFT")
     forecast = stack(
@@ -265,15 +280,7 @@ def build_preset():
         title="Forecast strip",
     )
 
-    location_row = stack(
-        [
-            fonticon("place", 14, MUTED),
-            text("$li(addr)$", 14, FG, title="Location"),
-        ],
-        orientation="HORIZONTAL_CENTER",
-        margin=4.0,
-        title="Location bar",
-    )
+    location_row = text("$li(addr)$", 14, MUTED, title="Location")
 
     main = stack(
         [

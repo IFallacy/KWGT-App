@@ -61,12 +61,12 @@ shape and a vertical **Content** stack:
 
 | Layer (title in editor) | Content / formula                                   |
 |-------------------------|-----------------------------------------------------|
-| Location bar            | `place` icon + `$li(addr)$`                          |
+| Location bar            | `$li(addr)$` (text)                                  |
 | Currently label         | `CURRENTLY` (static)                                 |
 | Condition               | `$tc(cap, wi(cond))$`                                |
 | Current temp            | `$wi(temp)$°`                                        |
 | Current icon            | FontIcon, mapped from `wi(icon)` (see §4)            |
-| Temp gauge              | ProgressModule, level = current temp within today's low→high |
+| Temp gauge              | shapes — accent bar with `$wf(max,0)$°` / `$wf(min,0)$°` labels |
 | Stats: Feels            | `$wi(flik)$°`                                        |
 | Stats: Humidity         | `$wi(hum)$%`                                         |
 | Stats: Wind             | `$wi(wind)$$wi(windu)$`                              |
@@ -178,7 +178,26 @@ root plus preview thumbnails).
 
 ---
 
-## 7. Known gaps vs. the web app
+## 7. Troubleshooting (from real import testing)
+
+- **All forecast temps read the same (e.g. 10°) / the summary's day-count is
+  blank** — your weather provider isn't returning a **7-day forecast** (it may
+  give current conditions only). `wi(...)` current values can work while
+  `wf(...)` forecast values are empty. Fix in **KWGT → Settings → Weather**: use
+  a provider with forecast support (OpenWeatherMap key or the Kustom Weather
+  Plugin) and wait for an update cycle.
+- **Icons show as a "!" in a circle** — that icon name isn't in KWGT's bundled
+  font. Only older Material names exist (e.g. `wb_sunny` works; `thermostat`,
+  `water_drop`, `air`, `place` do **not**). This preset therefore uses no glyphs
+  in the stats row or location, and only weather icons that resolve.
+- **A layer renders as a big white block** — usually an invalid enum value
+  (e.g. a `ProgressModule` with an unsupported `progress_mode`/rotate mode).
+  Valid `progress_mode` is `SHAPES`; valid rotate modes include `DEG90/180/270`
+  and `MANUAL`. This preset draws the gauge from plain shapes to avoid that.
+- **Text runs off the card edge** — set a `text_width` (px) on the text layer
+  so it wraps. The summary here uses one.
+
+## 8. Known gaps vs. the web app
 
 - **Hourly chart** — KWGT can't draw an arbitrary smooth line chart, so it's
   omitted. If your provider exposes hourly data you could approximate it with a
@@ -187,7 +206,7 @@ root plus preview thumbnails).
   precipitation-probability field, so the forecast strip marks likely-wet days
   with a dot (from the icon enum) rather than a percentage, and the weekly
   "wet" count uses the same signal.
-- **Place name** — uses `$li(addr)$` (device location). Replace with a static
-  label or a different location source if you prefer.
+- **Temp gauge** — drawn as a static accent bar with high/low labels (a
+  reliable shape stand-in for the web app's live marker).
 - **Alignment** — KWGT vertical stacks align center/right (not left), so the
   card is centered rather than left-aligned like the web mock.
