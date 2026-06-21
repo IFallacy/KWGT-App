@@ -52,6 +52,15 @@ not a bug.
 
 If weather fields are blank, revisit **section 0**.
 
+### Turn on the real "frosted glass"
+
+KWGT can't blur the wallpaper from inside `preset.json` — the card here is a
+**translucent** dark fill (so the wallpaper shows through) with a soft shadow
+and a subtle rim. For true frosted blur, enable it per-widget in the editor:
+open the **BACKGROUND** tab (bottom of the editor) and turn on **Blur** /
+"Blur background" (raise the radius to taste). That blurs whatever is behind
+the widget, giving the proper glass look on top of the translucent card.
+
 ---
 
 ## 2. What's wired (layer → formula)
@@ -61,17 +70,19 @@ shape and a vertical **Content** stack:
 
 | Layer (title in editor) | Content / formula                                   |
 |-------------------------|-----------------------------------------------------|
-| Location bar            | `$li(addr)$` (text)                                  |
-| Currently label         | `CURRENTLY` (static)                                 |
-| Condition               | `$tc(cap, wi(cond))$`                                |
-| Current temp            | `$wi(temp)$°`                                        |
-| Current icon            | FontIcon, mapped from `wi(icon)` (see §4)            |
-| Temp gauge              | shapes — accent bar with `$wf(max,0)$°` / `$wf(min,0)$°` labels |
+| Card                    | translucent fill + `OUTER` shadow + stroked rim      |
+| Location                | `$li(addr)$` (text)                                  |
+| Hero                    | condition icon + `CURRENTLY` / `$tc(cap,wi(cond))$` / `$wi(temp)$°` |
+| Temp range              | `H $wf(max,0)$°` / `L $wf(min,0)$°` over a horizontal gradient bar |
 | Stats: Feels            | `$wi(flik)$°`                                        |
 | Stats: Humidity         | `$wi(hum)$%`                                         |
 | Stats: Wind             | `$wi(wind)$$wi(windu)$`                              |
 | Week summary            | rule-based sentence from globals (see §3)            |
-| Forecast day 0–6        | weekday + icon + `$wf(max,N)$°` / `$wf(min,N)$°`     |
+| Forecast (7 columns)    | weekday + icon + `$wf(max,N)$°` / `$wf(min,N)$°`, today's weekday in accent |
+
+The layout is a single centered card: location, a hero row (icon + big temp),
+a high/low gradient bar, three stats, a wrapped weekly summary, and a
+horizontal 7-day strip.
 
 Globals (`wet`, `warm`, `cool`, `trend`) hold the summary's computed numbers so
 the summary text stays readable.
